@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
       
       - name: Install Task
-        run: sh -c "$(curl --location https://taskfile.dev/install.sh)" sh -s
+        uses: go-task/setup-task@v1
       
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
