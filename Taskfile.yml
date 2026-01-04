@@ -1,0 +1,47 @@
+version: "3"
+
+vars:
+  PROJECT: "Input.csproj"
+  CONFIG: "Release"
+  NUGET_SOURCE: "https://api.nuget.org/v3/index.json"
+
+tasks:
+  # Build all target frameworks in Release
+  build:
+    desc: Build the library
+    cmds:
+      - dotnet build {{.PROJECT}} -c {{.CONFIG}}
+
+  # Pack the project into ./nupkg with a specific version
+  pack:
+    desc: Pack NuGet package (VERSION=1.2.3)
+    vars:
+      VERSION: "{{.VERSION | default \"0.0.0-devbuild\"}}"
+    cmds:
+      - mkdir -p nupkg
+      - dotnet pack {{.PROJECT}} -c {{.CONFIG}} -o nupkg /p:PackageVersion={{.VERSION}}
+
+  # Push the nupkg for the given VERSION to NuGet.org
+  push:
+    desc: Push package to NuGet (VERSION=1.2.3, NUGET_API_KEY env required)
+    vars:
+      VERSION: "{{.VERSION}}"
+    preconditions:
+      - sh: 'test -n "$NUGET_API_KEY"'
+        msg: "NUGET_API_KEY environment variable must be set"
+      - sh: 'test -f "nupkg/RedOwl.Input.{{.VERSION}}.nupkg"'
+        msg: "Package nupkg/RedOwl.Input.{{.VERSION}}.nupkg not found. Run: task pack VERSION={{.VERSION}}"
+    cmds:
+      - dotnet nuget push "nupkg/RedOwl.Input.{{.VERSION}}.nupkg" --api-key "$NUGET_API_KEY" --source "{{.NUGET_SOURCE}}"
+
+  # High-level release workflow: build -> pack -> push
+  release:
+    desc: Build, pack, and push (VERSION=1.2.3)
+    vars:
+      VERSION: "{{.VERSION}}"
+    cmds:
+      - task: build
+      - task: pack
+        vars: { VERSION: "{{.VERSION}}" }
+      - task: push
+        vars: { VERSION: "{{.VERSION}}" }

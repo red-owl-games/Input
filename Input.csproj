@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>RedOwl</RootNamespace>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Title>RedOwl.Input</Title>
+        <Version>0.0.0-devbuild</Version>
+        <Description></Description>
+        <Copyright>© 2025 Red Owl Games</Copyright>
+        <Authors>Red Owl</Authors>
+        <Company>Red Owl</Company>
+
+        <PackageId>RedOwl.Input</PackageId>
+        <PackageIcon>icon.png</PackageIcon>
+        <PackageTags>input;redowl;util;utils</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageProjectUrl></PackageProjectUrl>
+
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/red-owl-games/Input</RepositoryUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="./README.md" Pack="true" PackagePath="\" />
+        <None Include="./LICENSE" Pack="true" PackagePath="\" />
+        <None Include="./icon.png" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="RedOwl.Log" Version="0.1.0" />
+        <PackageReference Include="Raylib-cs" Version="7.0.2" />
+    </ItemGroup>
+    
+</Project>
