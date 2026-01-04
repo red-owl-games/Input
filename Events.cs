@@ -5,13 +5,13 @@ namespace RedOwl;
 
 public readonly struct GamepadAxisEvent(Vector2 Value);
 
-public readonly struct GamepadButtonEvent(GamepadButton Button, bool IsDown);
+public readonly struct GamepadButtonEvent(GamepadButton Button, bool Pressed);
 
 public readonly struct MouseEvent(Vector2 Position, Vector2 Delta);
 public readonly struct MouseWheelEvent(Vector2 Delta);
-public readonly struct MouseButtonEvent(MouseButton Button, bool IsDown, Vector2 MousePosition, Keyboard.ModifierState Modifiers);
+public readonly struct MouseButtonEvent(MouseButton Button, bool Pressed, Vector2 MousePosition, Keyboard.ModifierState Modifiers);
 
-public readonly struct KeyboardEvent(KeyboardKey Key, bool IsDown, Keyboard.ModifierState Modifiers);
+public readonly struct KeyboardEvent(KeyboardKey Key, bool Pressed, Keyboard.ModifierState Modifiers);
 
 public readonly struct TextInputEvent(char Character, Keyboard.ModifierState Modifiers);
 

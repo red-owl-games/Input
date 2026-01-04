@@ -35,7 +35,7 @@ using Raylib_cs;
 // Will only trigger if key was pressed or released this frame
 Input.OnKeyboard += (e) => 
 {
-    if (e.Key == KeyboardKey.Space && e.IsDown)
+    if (e.Key == KeyboardKey.Space && e.Pressed)
         Jump();
 };
 
@@ -242,7 +242,7 @@ Subscribe to input events for reactive programming:
 // Keyboard events
 Input.OnKeyboard += (e) =>
 {
-    Console.WriteLine($"Key: {e.Key}, Down: {e.IsDown}, Modifiers: {e.Modifiers}");
+    Console.WriteLine($"Key: {e.Key}, Down: {e.Pressed}, Modifiers: {e.Modifiers}");
 };
 
 // Mouse events
@@ -253,7 +253,7 @@ Input.OnMouse += (e) =>
 
 Input.OnMouseButton += (e) =>
 {
-    Console.WriteLine($"Mouse button {e.Button} {(e.IsDown ? "pressed" : "released")}");
+    Console.WriteLine($"Mouse button {e.Button} {(e.Pressed ? "pressed" : "released")}");
 };
 
 Input.OnMouseWheel += (e) =>
@@ -264,7 +264,7 @@ Input.OnMouseWheel += (e) =>
 // Gamepad events
 Input.OnGamepadButton += (e) =>
 {
-    Console.WriteLine($"Gamepad button {e.Button} {(e.IsDown ? "pressed" : "released")}");
+    Console.WriteLine($"Gamepad button {e.Button} {(e.Pressed ? "pressed" : "released")}");
 };
 
 Input.OnGamepadAxis += (e) =>
