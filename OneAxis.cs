@@ -45,8 +45,8 @@ public class OneAxisState
     private float _value;
     
     public string Name { get; }
-    private OneAxisPositiveButtonState Pos { get; }
-    private OneAxisNegativeButtonState Neg { get; }
+    public IButtonState Pos { get; }
+    public IButtonState Neg { get; }
     
     public float LastValue { get; private set; }
     
