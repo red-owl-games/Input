@@ -1,18 +1,71 @@
+using System.Runtime.CompilerServices;
+
 namespace RedOwl;
 
-public class OneAxisState(string name)
+public class OneAxisPositiveButtonState(OneAxisState state) : IButtonState
 {
-    public string Name { get; init; } = name;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsPressed(float value) => value > Input.AxisDeadzone;
+    
+    public float Value => Math.Max(state.Value, 0f);
+    public bool Pressed => IsPressed(state.Value);
+    public bool Released => !IsPressed(state.Value);
+    
+    public bool WasPressedThisFrame => 
+        state.ChangedThisFrame && IsPressed(state.Value) && !IsPressed(state.LastValue);
 
+    public bool WasReleasedThisFrame => 
+        state.ChangedThisFrame && !IsPressed(state.Value) && IsPressed(state.LastValue);
+
+    public bool ChangedThisFrame => 
+        state.ChangedThisFrame && IsPressed(state.Value) != IsPressed(state.LastValue);
+}
+
+public class OneAxisNegativeButtonState(OneAxisState state) : IButtonState
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsPressed(float value) => value < -Input.AxisDeadzone;
+    
+    public float Value => Math.Max(-state.Value, 0f); // Return positive value for consistency with IButtonState
+    public bool Pressed => IsPressed(state.Value);
+    public bool Released => !IsPressed(state.Value);
+    
+    public bool WasPressedThisFrame => 
+        state.ChangedThisFrame && IsPressed(state.Value) && !IsPressed(state.LastValue);
+
+    public bool WasReleasedThisFrame => 
+        state.ChangedThisFrame && !IsPressed(state.Value) && IsPressed(state.LastValue);
+
+    public bool ChangedThisFrame => 
+        state.ChangedThisFrame && IsPressed(state.Value) != IsPressed(state.LastValue);
+}
+
+public class OneAxisState
+{
     private float _value;
+    
+    public string Name { get; }
+    private OneAxisPositiveButtonState Pos { get; }
+    private OneAxisNegativeButtonState Neg { get; }
+    
+    public float LastValue { get; private set; }
+    
     public float Value
     {
         get  => _value;
         set
         {
+            LastValue = _value;
             ChangedThisFrame = float.Abs(_value - value) > Input.AxisChangeThreshold;
             _value = value;
         }
+    }
+
+    public OneAxisState(string name)
+    {
+        Name = name;
+        Pos = new OneAxisPositiveButtonState(this);
+        Neg = new OneAxisNegativeButtonState(this);
     }
     
     public bool ChangedThisFrame { get; private set; }

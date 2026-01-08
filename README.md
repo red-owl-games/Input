@@ -340,6 +340,19 @@ var zoomAmount = zoomAction.Value;  // -1 to 1
 ZoomCamera(zoomAmount);
 ```
 
+Can also bind the axis to a button control
+
+```csharp
+var HotbarIncrement = new ButtonControl()
+    .Bind(Input.Mouse.ScrollDeltaClamped.Y.Neg) // Negative values Trigger ButtonControl
+    .Bind(Input.Gamepad.DPadRight)
+    .Enable();
+var HotbarDecrement = new ButtonControl()
+    .Bind(Input.Mouse.ScrollDeltaClamped.Y.Pos) // Positive values Trigger ButtonControl
+    .Bind(Input.Gamepad.DPadLeft)
+    .Enable();
+```
+
 ### TwoAxisControl
 
 Combine multiple 2D inputs (keyboard + gamepad + mouse):

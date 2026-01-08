@@ -2,7 +2,17 @@ using Raylib_cs;
 
 namespace RedOwl;
 
-public class ButtonState(int key)
+public interface IButtonState
+{
+    float Value { get; }
+    bool Pressed { get; }
+    bool Released { get; }
+    bool WasPressedThisFrame { get; }
+    bool WasReleasedThisFrame { get; }
+    bool ChangedThisFrame { get; }
+}
+
+public class ButtonState(int key) : IButtonState
 {
     public int Key { get; init; } = key;
     public bool State { get; internal set; }
@@ -44,9 +54,9 @@ public class ButtonControl
     private bool _pressedLast = false;
     private float _repeatTimer = 0;
 
-    private readonly List<ButtonState> _bindings = [];
+    private readonly List<IButtonState> _bindings = [];
 
-    public ButtonControl Bind(ButtonState source)
+    public ButtonControl Bind(IButtonState source)
     {
         _bindings.Add(source);
         return this;
