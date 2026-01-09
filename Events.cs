@@ -3,19 +3,48 @@ using Raylib_cs;
 
 namespace RedOwl;
 
-public readonly struct GamepadAxisEvent(Vector2 Value);
+public readonly struct GamepadAxisEvent(Vector2 value)
+{
+    public readonly Vector2 Value = value;
+}
 
-public readonly struct GamepadButtonEvent(GamepadButton Button, bool Pressed);
+public readonly struct GamepadButtonEvent(GamepadButton button, bool pressed)
+{
+    public readonly GamepadButton Button = button;
+    public readonly bool Pressed = pressed;
+}
 
-public readonly struct MouseEvent(Vector2 Position, Vector2 Delta);
-public readonly struct MouseWheelEvent(Vector2 Delta);
-public readonly struct MouseButtonEvent(MouseButton Button, bool Pressed, Vector2 MousePosition, Keyboard.ModifierState Modifiers);
+public readonly struct MouseEvent(Vector2 position, Vector2 delta)
+{
+    public readonly Vector2 Position = position;
+    public readonly Vector2 Delta = delta;
+}
 
-public readonly struct KeyboardEvent(KeyboardKey Key, bool Pressed, Keyboard.ModifierState Modifiers);
+public readonly struct MouseWheelEvent(Vector2 delta)
+{
+    public readonly Vector2 Delta = delta;
+}
 
-public readonly struct TextInputEvent(char Character, Keyboard.ModifierState Modifiers);
+public readonly struct MouseButtonEvent(MouseButton button, bool pressed, Vector2 mousePosition, Keyboard.ModifierState modifiers)
+{
+    public readonly MouseButton Button = button;
+    public readonly bool Pressed = pressed;
+    public readonly Vector2 MousePosition = mousePosition;
+    public readonly Keyboard.ModifierState Modifiers = modifiers;
+}
 
+public readonly struct KeyboardEvent(KeyboardKey key, bool pressed, Keyboard.ModifierState modifiers)
+{
+    public readonly KeyboardKey Key = key;
+    public readonly bool Pressed = pressed;
+    public readonly Keyboard.ModifierState Modifiers = modifiers;
+}
 
+public readonly struct TextInputEvent(char character, Keyboard.ModifierState modifiers)
+{
+    public readonly char Character = character;
+    public readonly Keyboard.ModifierState Modifiers = modifiers;
+}
 
 public static partial class Input
 {
