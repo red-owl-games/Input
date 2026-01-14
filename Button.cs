@@ -45,16 +45,56 @@ public class ButtonAxis(ButtonState positive, ButtonState negative)
     public float Value => Positive.Value + -Negative.Value;
 }
 
-public class ButtonControl
+public class ButtonControl : IControl
 {
-    public bool Enabled;
-    public float InitialRepeatDelay = 0.3f;
-    public float RepeatInterval = 0.15f;
-    public bool  FireOnPress = true;
-    private bool _pressedLast = false;
-    private float _repeatTimer = 0;
+    private bool _disposed = false;
+    public bool Enabled { get; set; }
 
     private readonly List<IButtonState> _bindings = [];
+    private readonly List<IButtonInteraction> _interactions = [];
+    
+    // Cached interaction results for querying
+    private DoubleTapInteraction? _doubleTapInteraction;
+    private HoldInteraction? _holdInteraction;
+
+    public ButtonControl()
+    {
+        Input._controls.Add(this);
+    }
+
+    ~ButtonControl()
+    {
+        Dispose();
+    }
+    
+    public void Dispose()
+    {
+        if (_disposed) return;
+        Input._controls.Remove(this);
+        _disposed = true;
+    }
+
+    public void Update(float dt)
+    {
+        if (!Enabled)
+        {
+            foreach (var interaction in _interactions) interaction.Reset();
+            return;
+        }
+        
+        var context = new ButtonInteractionContext(
+            PressedInternal,
+            WasPressedThisFrameInternal,
+            ReleasedInternal,
+            WasReleasedThisFrameInternal,
+            Enabled,
+            dt
+        );
+        foreach (var interaction in _interactions)
+        {
+            interaction.Process(context);
+        }
+    }
 
     public ButtonControl Bind(IButtonState source)
     {
@@ -67,56 +107,63 @@ public class ButtonControl
         Enabled = true;
         return this;
     }
+
+    /// <summary>
+    /// Adds an interaction to this control. Interactions are processed each frame during Update().
+    /// </summary>
+    public ButtonControl With(IButtonInteraction interaction)
+    {
+        _interactions.Add(interaction);
+
+        switch (interaction)
+        {
+            case DoubleTapInteraction doubleTap:
+                _doubleTapInteraction = doubleTap;
+                break;
+            case HoldInteraction hold:
+                _holdInteraction = hold;
+                break;
+        }
+        
+        return this;
+    }
+    
+    private bool PressedInternal => _bindings.Any(binding => binding.Pressed);
+    private bool WasPressedThisFrameInternal => _bindings.Any(binding => binding.WasPressedThisFrame);
+    private bool ReleasedInternal => _bindings.All(binding => binding.Released);
+    private bool WasReleasedThisFrameInternal => _bindings.Any(binding => binding.WasReleasedThisFrame);
     
     public float Value => Enabled ? Math.Clamp(_bindings.Sum(b => b.Value), 0, 1) : 0f;
 
-    public bool Pressed => Enabled && _bindings.Any(binding => binding.Pressed);
-    public bool WasPressedThisFrame => Enabled && _bindings.Any(binding => binding.WasPressedThisFrame);
-    public bool Released => Enabled && _bindings.Any(binding => binding.Released);
-    public bool WasReleasedThisFrame => Enabled && _bindings.Any(binding => binding.WasReleasedThisFrame);
+    /// <summary>
+    /// Returns true if any binding is held down.
+    /// </summary>
+    public bool Pressed => Enabled && PressedInternal;
     
+    /// <summary>
+    /// Returns true if any binding was pressed this frame update.
+    /// </summary>
+    public bool WasPressedThisFrame => Enabled && WasPressedThisFrameInternal;
+    
+    /// <summary>
+    /// Returns true if all bindings are not held down.
+    /// </summary>
+    public bool Released => Enabled && ReleasedInternal;
+    
+    /// <summary>
+    /// Returns true if any binding was released this frame update.
+    /// </summary>
+    public bool WasReleasedThisFrame => Enabled && WasReleasedThisFrameInternal;
 
     /// <summary>
-    /// Returns how many times to trigger this frame (0,1, or >1 if frame time is large).
-    /// Call this once per frame with dt.
+    /// Returns true if a double-tap was detected this frame.
+    /// Returns false if DoubleTapInteraction is not configured for this control.
     /// </summary>
-    public int IsHeld(float dt)
-    {
-        if (!Enabled)
-        {
-            _pressedLast = false;
-            _repeatTimer = 0;
-            return 0;
-        }
+    public bool WasDoubleTappedThisFrame => _doubleTapInteraction?.WasDoubleTappedThisFrame ?? false;
 
-        var down = _bindings.Any(binding => binding.Pressed);
-        var count = 0;
-
-        if (!down)
-        {
-            _repeatTimer = 0f;
-            if (_pressedLast) { /* release edge if you need it elsewhere */ }
-        }
-        else
-        {
-            if (!_pressedLast)
-            {
-                // rising edge
-                _repeatTimer = InitialRepeatDelay;
-                if (FireOnPress) count = 1;
-            }
-            else
-            {
-                _repeatTimer -= dt;
-                while (_repeatTimer <= 0f)
-                {
-                    count++;
-                    _repeatTimer += RepeatInterval; // keep remainder for stable cadence
-                }
-            }
-        }
-
-        _pressedLast = down;
-        return count;
-    }
+    /// <summary>
+    /// Returns the number of times the hold interaction should trigger this frame (0, 1, or >1 if frame time is large).
+    /// Returns 0 if HoldInteraction is not configured for this control.
+    /// </summary>
+    public int HeldCountThisFrame => _holdInteraction?.HeldCountThisFrame ?? 0;
 }

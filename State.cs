@@ -9,7 +9,7 @@ public class InputState()
 
     public bool AnyButton => Mouse.AnyButton || Keyboard.AnyButton || Gamepad.AnyButton;
 
-    public void Read()
+    public void Read(float dt)
     {
         if (!Enabled) return;
         Mouse.Read();

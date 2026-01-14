@@ -57,8 +57,11 @@ var move = new TwoAxisControl()
 
 while (!Raylib.WindowShouldClose())
 {
+    var dt = Raylib.GetFrameTime();
+    
     // Poll and store input state for this frame and emit change events
-    Input.Update();
+    // This also processes all registered controls and their interactions
+    Input.Update(dt);
     
     // Query input state directly
     if (Input.Keyboard.KeyW.Pressed)
@@ -388,25 +391,121 @@ var horizontalAxis = new ButtonAxis(
 var value = horizontalAxis.Value;  // 1.0 if D pressed, -1.0 if A pressed, 0.0 if neither/both
 ```
 
-### ButtonControl Repeat Behavior
+### Button Interactions
 
-`ButtonControl` supports key repeat for held buttons:
+`ButtonControl` supports composable interactions that process button state each frame. Interactions are automatically processed during `Input.Update()`, so you can query their results as simple properties without passing delta time.
+
+#### Double Tap Interaction
+
+Detects double-tap gestures:
+
+```csharp
+var useAction = new ButtonControl()
+    .Bind(Input.Keyboard.KeySpace)
+    .Bind(Input.Gamepad.ButtonSouth)
+    .With(new DoubleTapInteraction { Threshold = 0.3f })  // 0.3 second window for double-tap
+    .Enable();
+
+// Query double-tap state (no delta time needed!)
+if (useAction.WasDoubleTappedThisFrame)
+{
+    PerformSpecialAction();  // Double-tap detected
+}
+
+if (useAction.WasPressedThisFrame)
+{
+    PerformNormalAction();  // Single tap
+}
+```
+
+**Configuration:**
+- `Threshold` (default: 0.3f) - Maximum time in seconds between two taps to be considered a double-tap
+
+#### Hold Interaction
+
+Handles hold/repeat logic for button presses. Useful for actions that should repeat while held (like scrolling through inventory or rapid-fire weapons):
+
+```csharp
+var scrollAction = new ButtonControl()
+    .Bind(Input.Keyboard.KeyUpArrow)
+    .With(new HoldInteraction 
+    { 
+        InitialRepeatDelay = 0.3f,  // Wait 0.3s before first repeat
+        RepeatInterval = 0.15f,      // Then repeat every 0.15s
+        FireOnPress = true           // Fire immediately on press, then repeat
+    })
+    .Enable();
+
+// Query hold state (no delta time needed!)
+var repeatCount = scrollAction.HeldCountThisFrame;  // 0, 1, or >1 if frame time is large
+for (int i = 0; i < repeatCount; i++)
+{
+    ScrollInventory();  // Process each repeat
+}
+```
+
+**Configuration:**
+- `InitialRepeatDelay` (default: 0.3f) - Delay in seconds before repeat starts
+- `RepeatInterval` (default: 0.15f) - Interval in seconds between repeat triggers after initial delay
+- `FireOnPress` (default: true) - If true, triggers once immediately on press, then repeats after delay. If false, only triggers after initial delay, then repeats.
+
+**Note:** `HeldCountThisFrame` can be greater than 1 if the frame time is large (e.g., during lag spikes). This ensures consistent behavior regardless of frame rate.
+
+#### Combining Interactions
+
+You can add multiple interactions to a single control:
 
 ```csharp
 var action = new ButtonControl()
-{
-    InitialRepeatDelay = 0.3f,  // Delay before first repeat (seconds)
-    RepeatInterval = 0.15f,     // Time between repeats (seconds)
-    FireOnPress = true          // Fire immediately on press
-};
+    .Bind(Input.Keyboard.KeySpace)
+    .With(new DoubleTapInteraction { Threshold = 0.3f })
+    .With(new HoldInteraction 
+    { 
+        InitialRepeatDelay = 0.5f,
+        RepeatInterval = 0.1f,
+        FireOnPress = false  // Don't fire on initial press, wait for hold
+    })
+    .Enable();
 
-// In your update loop
-var count = action.IsHeld(deltaTime);  // Returns number of times to trigger this frame
-for (int i = 0; i < count; i++)
+// Query all interaction states
+if (action.WasDoubleTappedThisFrame)
 {
-    ProcessAction();
+    // Handle double-tap
+}
+else if (action.HeldCountThisFrame > 0)
+{
+    // Handle hold/repeat
+}
+else if (action.WasPressedThisFrame)
+{
+    // Handle single tap
 }
 ```
+
+#### Querying Unconfigured Interactions
+
+If you query an interaction property that wasn't configured for the control, it returns a safe default value:
+- `WasDoubleTappedThisFrame` returns `false` if `DoubleTapInteraction` is not configured
+- `HeldCountThisFrame` returns `0` if `HoldInteraction` is not configured
+
+This allows you to query interaction properties without checking if they're configured first.
+
+#### Control Lifecycle
+
+Controls automatically register themselves when created and are processed each frame during `Input.Update()`. If you no longer need a control, you can dispose it to stop processing:
+
+```csharp
+var action = new ButtonControl()
+    .Bind(Input.Keyboard.KeySpace)
+    .Enable();
+
+// ... use the control ...
+
+// When done, dispose it to stop processing
+action.Dispose();
+```
+
+Controls will also be automatically cleaned up when garbage collected (via finalizer), but it's recommended to explicitly dispose long-lived controls when they're no longer needed.
 
 ## Standard Action Mappings
 
@@ -427,7 +526,7 @@ var zoom = input.StandardZoomControl();
 // Standard back/cancel (Escape + Gamepad B/Circle)
 var back = input.StandardBackControl();
 
-// Standard use/interact (Space + Gamepad A/Cross)
+// Standard use/interact (Space + Gamepad A/Cross) - configured with double-tap interaction
 var use = input.StandardUseControl();
 
 // Standard action (Left Click + F + Gamepad X/Square)

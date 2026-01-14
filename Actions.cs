@@ -46,6 +46,7 @@ public static partial class Input
         return new ButtonControl()
             .Bind(input.Keyboard.KeySpace)
             .Bind(input.Gamepad.ButtonSouth)
+            .With(new DoubleTapInteraction { Threshold = 0.3f })
             .Enable();
     }
     

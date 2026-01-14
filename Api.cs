@@ -2,12 +2,19 @@
 
 namespace RedOwl;
 
+public interface IControl : IDisposable
+{
+    void Update(float dt);
+}
+
 public static partial class Input
 {
     public static InputState State { get; private set; } = new();
     public static Mouse Mouse => State.Mouse;
     public static Keyboard Keyboard => State.Keyboard;
     public static Gamepad Gamepad => State.Gamepad;
+
+    internal static List<IControl> _controls = [];
     
     #region Settings
     
@@ -16,14 +23,16 @@ public static partial class Input
     
     #endregion
     
-    public static void Update()
+    public static void Update(float dt)
     {
-        State.Read();
+        State.Read(dt);
         
         CollectGamepadEvents();
         CollectMouseEvents();
         CollectKeyboardEvents();
         CollectTextInputEvents();
+
+        foreach (var control in _controls) control.Update(dt);
     }
 
     private static void CollectGamepadEvents()
