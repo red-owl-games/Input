@@ -453,33 +453,130 @@ if (useAction.WasPressedThisFrame)
 
 #### Hold Interaction
 
-Handles hold/repeat logic for button presses. Useful for actions that should repeat while held (like scrolling through inventory or rapid-fire weapons):
+Handles hold behavior for button presses. Supports two modes that can be used independently or together:
+
+1. **Repeat Mode** - Triggers repeatedly while held (like rapid-fire weapons)
+2. **Long Press Mode** - Detects when held for a specified duration (like delete confirmation or power button)
+
+**Repeat Mode Example:**
 
 ```csharp
 var scrollAction = new ButtonControl()
     .Bind(Input.Keyboard.KeyUpArrow)
     .With(new HoldInteraction 
     { 
-        InitialRepeatDelay = 0.3f,  // Wait 0.3s before first repeat
-        RepeatInterval = 0.15f,      // Then repeat every 0.15s
-        FireOnPress = true           // Fire immediately on press, then repeat
+        RepeatMode = true,           // Enable repeat mode
+        InitialRepeatDelay = 0.3f,   // Wait 0.3s before first repeat
+        RepeatInterval = 0.15f,       // Then repeat every 0.15s
+        FireOnPress = true            // Fire immediately on press, then repeat
     })
     .Enable();
 
-// Query hold state (no delta time needed!)
-var repeatCount = scrollAction.HeldCountThisFrame;  // 0, 1, or >1 if frame time is large
+// Query repeat state
+var repeatCount = scrollAction.HoldCountThisFrame;  // 0, 1, or >1 if frame time is large
 for (int i = 0; i < repeatCount; i++)
 {
     ScrollInventory();  // Process each repeat
 }
 ```
 
+**Long Press Mode Example:**
+
+```csharp
+var deleteAction = new ButtonControl()
+    .Bind(Input.Keyboard.KeyDelete)
+    .With(new HoldInteraction 
+    { 
+        LongPressMode = true,         // Enable long press mode
+        LongPressThreshold = 3.0f     // Must hold for 3 seconds
+    })
+    .Enable();
+
+// Query long press state
+if (deleteAction.WasHeldThisFrame)
+{
+    // Threshold just crossed - show confirmation UI
+    ShowDeleteConfirmation();
+}
+
+if (deleteAction.IsHeld)
+{
+    // Still held past threshold - perform the action continuously
+    PerformDelete();
+}
+
+// Query progress for UI (0.0 to 1.0)
+if (deleteAction.Pressed)
+{
+    var progress = deleteAction.HoldProgress;  // Only meaningful when button is held
+    UpdateProgressBar(progress);  // Drive a fill bar UI element
+}
+else
+{
+    HideProgressBar();  // Hide when not being held
+}
+```
+
+**Both Modes Example:**
+
+```csharp
+var action = new ButtonControl()
+    .Bind(Input.Keyboard.KeySpace)
+    .With(new HoldInteraction 
+    { 
+        RepeatMode = true,            // Enable repeat
+        InitialRepeatDelay = 0.5f,
+        RepeatInterval = 0.1f,
+        LongPressMode = true,          // Also enable long press
+        LongPressThreshold = 2.0f      // Hold for 2 seconds
+    })
+    .Enable();
+
+// Use repeat mode
+var repeatCount = action.HoldCountThisFrame;
+for (int i = 0; i < repeatCount; i++)
+{
+    PerformAction();
+}
+
+// Use long press mode
+if (action.WasHeldThisFrame)
+{
+    PerformSpecialAction();  // Triggered once after 2 seconds
+}
+
+// Show progress bar
+if (action.Pressed)
+{
+    UpdateProgressBar(action.HoldProgress);
+}
+```
+
 **Configuration:**
+
+**Repeat Mode:**
+- `RepeatMode` (default: true) - Enable repeat mode
 - `InitialRepeatDelay` (default: 0.3f) - Delay in seconds before repeat starts
 - `RepeatInterval` (default: 0.15f) - Interval in seconds between repeat triggers after initial delay
 - `FireOnPress` (default: true) - If true, triggers once immediately on press, then repeats after delay. If false, only triggers after initial delay, then repeats.
 
-**Note:** `HeldCountThisFrame` can be greater than 1 if the frame time is large (e.g., during lag spikes). This ensures consistent behavior regardless of frame rate.
+**Long Press Mode:**
+- `LongPressMode` (default: false) - Enable long press mode
+- `LongPressThreshold` (default: 3.0f) - Duration in seconds the button must be held before triggering
+
+**Properties:**
+
+**Repeat Mode:**
+- `HoldCountThisFrame` - Returns the number of times to trigger this frame (0, 1, or >1 if frame time is large). Only meaningful when `RepeatMode` is true.
+
+**Long Press Mode:**
+- `IsHeld` - Returns `true` if the button has been held past the threshold and is still being held. Only meaningful when `LongPressMode` is true.
+- `WasHeldThisFrame` - Returns `true` if the threshold was crossed this frame (edge detection). Only meaningful when `LongPressMode` is true.
+- `HoldProgress` (on `ButtonControl`) - Returns the progress as a normalized value between 0.0 and 1.0. Returns 0.0 when not held or just pressed, increases while held, and reaches 1.0 when threshold is reached. Perfect for driving UI progress bars. Only meaningful when `LongPressMode` is true and the button is currently pressed.
+
+**Notes:**
+- `HoldCountThisFrame` can be greater than 1 if the frame time is large (e.g., during lag spikes). This ensures consistent behavior regardless of frame rate.
+- Long press resets immediately when the button is released, so you must hold continuously for the full duration.
 
 #### Combining Interactions
 
@@ -491,9 +588,12 @@ var action = new ButtonControl()
     .With(new DoubleTapInteraction { Threshold = 0.3f })
     .With(new HoldInteraction 
     { 
+        RepeatMode = true,
         InitialRepeatDelay = 0.5f,
         RepeatInterval = 0.1f,
-        FireOnPress = false  // Don't fire on initial press, wait for hold
+        FireOnPress = false,  // Don't fire on initial press, wait for hold
+        LongPressMode = true,
+        LongPressThreshold = 2.0f
     })
     .Enable();
 
@@ -502,7 +602,11 @@ if (action.WasDoubleTappedThisFrame)
 {
     // Handle double-tap
 }
-else if (action.HeldCountThisFrame > 0)
+else if (action.WasHeldThisFrame)
+{
+    // Handle long press threshold crossed
+}
+else if (action.HoldCountThisFrame > 0)
 {
     // Handle hold/repeat
 }
@@ -516,7 +620,7 @@ else if (action.WasPressedThisFrame)
 
 If you query an interaction property that wasn't configured for the control, it returns a safe default value:
 - `WasDoubleTappedThisFrame` returns `false` if `DoubleTapInteraction` is not configured
-- `HeldCountThisFrame` returns `0` if `HoldInteraction` is not configured
+- `HoldCountThisFrame` returns `0` if `HoldInteraction` is not configured
 
 This allows you to query interaction properties without checking if they're configured first.
 

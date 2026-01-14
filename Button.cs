@@ -214,9 +214,31 @@ public class ButtonControl : IControl
     /// </summary>
     public bool WasDoubleTappedThisFrame => _doubleTapInteraction?.WasDoubleTappedThisFrame ?? false;
 
+
+
+    /// <summary>
+    /// Returns true if the button has been held past the long press threshold and is still being held.
+    /// Returns false if HoldInteraction is not configured or LongPressMode is disabled.
+    /// </summary>
+    public bool IsHeld => _holdInteraction?.IsHeld ?? false;
+
+    /// <summary>
+    /// Returns true if the long press threshold was crossed this frame (edge detection).
+    /// Returns false if HoldInteraction is not configured or LongPressMode is disabled.
+    /// </summary>
+    public bool WasHeldThisFrame => _holdInteraction?.WasHeldThisFrame ?? false;
+    
     /// <summary>
     /// Returns the number of times the hold interaction should trigger this frame (0, 1, or >1 if frame time is large).
-    /// Returns 0 if HoldInteraction is not configured for this control.
+    /// Returns 0 if HoldInteraction is not configured or RepeatMode is disabled.
     /// </summary>
-    public int HeldCountThisFrame => _holdInteraction?.HeldCountThisFrame ?? 0;
+    public int HoldCountThisFrame => _holdInteraction?.HoldCountThisFrame ?? 0;
+
+    /// <summary>
+    /// Returns the progress of the long press action as a normalized value between 0.0 and 1.0.
+    /// Returns 0.0 when the button is not being held, just pressed, or if HoldInteraction is not configured or LongPressMode is disabled.
+    /// Returns a value between 0.0 and 1.0 while the button is held (1.0 = threshold reached or exceeded).
+    /// Useful for driving UI progress bars. Check if the button is pressed before using this value.
+    /// </summary>
+    public float HoldProgress => _holdInteraction?.LongPressProgress ?? 0f;
 }
