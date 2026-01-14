@@ -49,6 +49,12 @@ public class ButtonControl : IControl
 {
     private bool _disposed = false;
     public bool Enabled { get; set; }
+    
+    /// <summary>
+    /// If true, requires all bindings to be active simultaneously (combo/chord input).
+    /// If false (default), any binding being active will trigger the control.
+    /// </summary>
+    public bool RequireAllBindings { get; set; } = false;
 
     private readonly List<IButtonState> _bindings = [];
     private readonly List<IButtonInteraction> _interactions = [];
@@ -127,31 +133,78 @@ public class ButtonControl : IControl
         
         return this;
     }
+
+    /// <summary>
+    /// Configures this control to require all bindings to be active simultaneously (combo/chord input).
+    /// By default, any binding being active will trigger the control.
+    /// </summary>
+    public ButtonControl RequireAll()
+    {
+        RequireAllBindings = true;
+        return this;
+    }
     
-    private bool PressedInternal => _bindings.Any(binding => binding.Pressed);
-    private bool WasPressedThisFrameInternal => _bindings.Any(binding => binding.WasPressedThisFrame);
-    private bool ReleasedInternal => _bindings.All(binding => binding.Released);
+    private bool PressedInternal => RequireAllBindings 
+        ? _bindings.Count > 0 && _bindings.All(binding => binding.Pressed)
+        : _bindings.Any(binding => binding.Pressed);
+    
+    private bool WasPressedThisFrameInternal
+    {
+        get
+        {
+            if (RequireAllBindings)
+            {
+                // For combo inputs: all bindings must be pressed, and the combo activates
+                // when the last required binding is pressed while all others are already pressed
+                if (_bindings.Count == 0) return false;
+                
+                // Check if all bindings are currently pressed
+                if (!_bindings.All(binding => binding.Pressed)) return false;
+                
+                // Check if at least one binding was pressed this frame
+                // This ensures we detect when the combo becomes complete
+                return _bindings.Any(binding => binding.WasPressedThisFrame);
+            }
+            else
+            {
+                return _bindings.Any(binding => binding.WasPressedThisFrame);
+            }
+        }
+    }
+    
+    private bool ReleasedInternal => RequireAllBindings
+        ? _bindings.Any(binding => binding.Released)  // Combo broken if any binding released
+        : _bindings.All(binding => binding.Released);
+    
     private bool WasReleasedThisFrameInternal => _bindings.Any(binding => binding.WasReleasedThisFrame);
     
     public float Value => Enabled ? Math.Clamp(_bindings.Sum(b => b.Value), 0, 1) : 0f;
 
     /// <summary>
-    /// Returns true if any binding is held down.
+    /// Returns true if the control is active.
+    /// - If RequireAllBindings is false: returns true if any binding is held down.
+    /// - If RequireAllBindings is true: returns true if all bindings are held down simultaneously.
     /// </summary>
     public bool Pressed => Enabled && PressedInternal;
     
     /// <summary>
-    /// Returns true if any binding was pressed this frame update.
+    /// Returns true if the control was activated this frame.
+    /// - If RequireAllBindings is false: returns true if any binding was pressed this frame.
+    /// - If RequireAllBindings is true: returns true when all bindings become pressed simultaneously (combo activated).
     /// </summary>
     public bool WasPressedThisFrame => Enabled && WasPressedThisFrameInternal;
     
     /// <summary>
-    /// Returns true if all bindings are not held down.
+    /// Returns true if the control is not active.
+    /// - If RequireAllBindings is false: returns true if all bindings are not held down.
+    /// - If RequireAllBindings is true: returns true if any binding is released (combo broken).
     /// </summary>
     public bool Released => Enabled && ReleasedInternal;
     
     /// <summary>
-    /// Returns true if any binding was released this frame update.
+    /// Returns true if the control was deactivated this frame.
+    /// - If RequireAllBindings is false: returns true if any binding was released this frame.
+    /// - If RequireAllBindings is true: returns true if any binding was released this frame (combo broken).
     /// </summary>
     public bool WasReleasedThisFrame => Enabled && WasReleasedThisFrameInternal;
 

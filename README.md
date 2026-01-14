@@ -310,7 +310,7 @@ The action mapping system lets you combine multiple input sources into unified a
 
 ### ButtonControl
 
-Combine multiple buttons into a single action:
+Combine multiple buttons into a single action. By default, **any** binding being active will trigger the control:
 
 ```csharp
 var jumpAction = new ButtonControl()
@@ -321,12 +321,42 @@ var jumpAction = new ButtonControl()
 // Check the action
 if (jumpAction.Pressed)
 {
-    Jump();
+    Jump();  // Triggers if Space OR Gamepad A/X is pressed
 }
 
 if (jumpAction.WasPressedThisFrame)
 {
     StartJumpAnimation();
+}
+```
+
+#### Combination Inputs
+
+For actions that require **all** bindings to be active simultaneously (like keyboard shortcuts or gamepad combos), use `.RequireAll()`:
+
+```csharp
+// Keyboard shortcut: Ctrl + C
+var copyAction = new ButtonControl()
+    .Bind(Input.Keyboard.Control)       // Ctrl modifier
+    .Bind(Input.Keyboard.KeyC)          // C key
+    .RequireAll()                        // Both must be pressed together
+    .Enable();
+
+if (copyAction.WasPressedThisFrame)
+{
+    CopyToClipboard();  // Only triggers when Ctrl+C is pressed together
+}
+
+// Gamepad combo: Left Shoulder + D-Pad Up
+var specialMove = new ButtonControl()
+    .Bind(Input.Gamepad.LeftShoulder)
+    .Bind(Input.Gamepad.DPadUp)
+    .RequireAll()
+    .Enable();
+
+if (specialMove.Pressed)
+{
+    PerformSpecialMove();  // Only active when both buttons are held
 }
 ```
 
