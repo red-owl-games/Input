@@ -1,6 +1,6 @@
 namespace RedOwl;
 
-public class InputState()
+public class InputState
 {
     public InputState(int gamepad = 0)
     {
@@ -14,17 +14,17 @@ public class InputState()
     {
         get {
             return Mouse.Enabled && Keyboard.Enabled & Gamepad.Enabled;
-        }; 
+        }
         set {
             Mouse.Enabled = value;
             Keyboard.Enabled = value;
             Gamepad.Enabled = value;
-        };
+        }
     }
 
-    public Mouse Mouse = new();
-    public Keyboard Keyboard = new();
-    public Gamepad Gamepad = new(0);
+    public Mouse Mouse;
+    public Keyboard Keyboard;
+    public Gamepad Gamepad;
 
     public bool AnyButton => Mouse.AnyButton || Keyboard.AnyButton || Gamepad.AnyButton;
 
