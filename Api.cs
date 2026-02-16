@@ -9,11 +9,13 @@ public interface IControl : IDisposable
 
 public static partial class Input
 {
+    public static InputState Empty { get; private set; } = new();
     public static InputState State { get; private set; } = new();
     public static Mouse Mouse => State.Mouse;
     public static Keyboard Keyboard => State.Keyboard;
     public static Gamepad Gamepad => State.Gamepad;
 
+    internal static List<InputState> _states = [];
     internal static List<IControl> _controls = [];
     
     #region Settings
@@ -31,7 +33,8 @@ public static partial class Input
         CollectMouseEvents();
         CollectKeyboardEvents();
         CollectTextInputEvents();
-
+        
+        foreach (var state in _states) state.ReadFrom(State);
         foreach (var control in _controls) control.Update(dt);
     }
 

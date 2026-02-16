@@ -2,7 +2,26 @@ namespace RedOwl;
 
 public class InputState()
 {
-    public bool Enabled { get; set; } = true;
+    public InputState(int gamepad = 0)
+    {
+        Mouse = new Mouse();
+        Keyboard = new Keyboard();
+        Gamepad = new Gamepad(gamepad);
+        Input._states.Add(this);
+    }
+    
+    public bool Enabled
+    {
+        get {
+            return Mouse.Enabled && Keyboard.Enabled & Gamepad.Enabled;
+        }; 
+        set {
+            Mouse.Enabled = value;
+            Keyboard.Enabled = value;
+            Gamepad.Enabled = value;
+        };
+    }
+
     public Mouse Mouse = new();
     public Keyboard Keyboard = new();
     public Gamepad Gamepad = new(0);
@@ -10,8 +29,7 @@ public class InputState()
     public bool AnyButton => Mouse.AnyButton || Keyboard.AnyButton || Gamepad.AnyButton;
 
     public void Read(float dt)
-    {
-        if (!Enabled) return;
+    { 
         Mouse.Read();
         Keyboard.Read();
         Gamepad.Read();
@@ -19,9 +37,8 @@ public class InputState()
 
     public void ReadFrom(InputState other)
     {
-        if (!Enabled) return;
-        Mouse.ReadFrom(other.Mouse);
-        Keyboard.ReadFrom(other.Keyboard);
-        Gamepad.ReadFrom(other.Gamepad);
+        Mouse.ReadFrom(Mouse.Enabled ? other.Mouse : Input.Empty.Mouse);
+        Keyboard.ReadFrom(Keyboard.Enabled ? other.Keyboard : Input.Empty.Keyboard);
+        Gamepad.ReadFrom(Gamepad.Enabled ? other.Gamepad : Input.Empty.Gamepad);
     }
 }

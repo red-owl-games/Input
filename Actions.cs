@@ -49,6 +49,42 @@ public static partial class Input
             .With(new DoubleTapInteraction { Threshold = 0.3f })
             .Enable();
     }
+
+    public static ButtonControl NoCameraAction1Control(this InputState input)
+    {
+        return new ButtonControl()
+            .Bind(input.Keyboard.KeyJ)
+            .Bind(input.Gamepad.ButtonEast)
+            .With(new DoubleTapInteraction { Threshold = 0.3f })
+            .Enable();
+    }
+    
+    public static ButtonControl NoCameraAction2Control(this InputState input)
+    {
+        return new ButtonControl()
+            .Bind(input.Keyboard.KeyK)
+            .Bind(input.Gamepad.ButtonSouth)
+            .With(new DoubleTapInteraction { Threshold = 0.3f })
+            .Enable();
+    }
+    
+    public static ButtonControl NoCameraAction3Control(this InputState input)
+    {
+        return new ButtonControl()
+            .Bind(input.Keyboard.KeyL)
+            .Bind(input.Gamepad.ButtonWest)
+            .With(new DoubleTapInteraction { Threshold = 0.3f })
+            .Enable();
+    }
+    
+    public static ButtonControl NoCameraAction4Control(this InputState input)
+    {
+        return new ButtonControl()
+            .Bind(input.Keyboard.KeyP)
+            .Bind(input.Gamepad.ButtonNorth)
+            .With(new DoubleTapInteraction { Threshold = 0.3f })
+            .Enable();
+    }
     
     public static ButtonControl StandardActionControl(this InputState input)
     {
